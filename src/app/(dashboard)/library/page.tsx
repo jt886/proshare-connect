@@ -105,7 +105,7 @@ export default function LibraryPage() {
     };
 
     return (
-        <div className="space-y-6 pb-24 pt-safe">
+        <div className="space-y-6 pb-24 pt-safe px-4 md:px-6">
             <div className="flex items-center justify-between">
                 <h1 className="text-2xl font-bold">Knowledge Library</h1>
             </div>
