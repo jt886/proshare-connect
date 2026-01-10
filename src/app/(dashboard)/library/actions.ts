@@ -1,5 +1,32 @@
 "use server";
 
+// --- Heavy Polyfills for Vercel Environment ---
+if (typeof (globalThis as any).DOMMatrix === "undefined") {
+    (globalThis as any).DOMMatrix = class DOMMatrix {
+        constructor() { }
+        static fromFloat32Array() { return new DOMMatrix(); }
+        static fromFloat64Array() { return new DOMMatrix(); }
+    };
+}
+if (typeof (globalThis as any).Path2D === "undefined") {
+    (globalThis as any).Path2D = class Path2D { };
+}
+if (typeof (globalThis as any).ImageData === "undefined") {
+    (globalThis as any).ImageData = class ImageData {
+        constructor() { }
+    };
+}
+if (typeof (globalThis as any).window === "undefined") {
+    (globalThis as any).window = globalThis;
+}
+if (typeof (globalThis as any).self === "undefined") {
+    (globalThis as any).self = globalThis;
+}
+if (typeof (globalThis as any).navigator === "undefined") {
+    (globalThis as any).navigator = { userAgent: "node" };
+}
+// ----------------------------------------------
+
 import { createClient } from "@/utils/supabase/server";
 import { getEmbedding } from "@/lib/openai/server";
 import { chunkText } from "@/lib/rag/utils";
