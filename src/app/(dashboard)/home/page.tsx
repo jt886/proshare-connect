@@ -4,6 +4,7 @@ import { HomeTrends } from "@/components/features/home/HomeTrends";
 import { TeamSection } from "@/components/features/home/TeamSection";
 import { Button } from "@/components/ui/button";
 import { Plus, Settings } from "lucide-react";
+import Link from "next/link";
 
 export default function HomePage() {
     return (
@@ -15,9 +16,11 @@ export default function HomePage() {
                     <p className="text-sm text-muted-foreground font-medium">January 10, 2026</p>
                 </div>
                 <div className="flex gap-2">
-                    <Button variant="secondary" size="icon" className="rounded-2xl h-10 w-10">
-                        <Settings className="h-5 w-5" />
-                    </Button>
+                    <Link href="/settings">
+                        <Button variant="secondary" size="icon" className="rounded-2xl h-10 w-10">
+                            <Settings className="h-5 w-5" />
+                        </Button>
+                    </Link>
                     <Button size="icon" className="rounded-2xl h-10 w-10 shadow-lg shadow-primary/20">
                         <Plus className="h-5 w-5" />
                     </Button>
