@@ -1,40 +1,33 @@
 "use server";
 
 // --- Heavy Polyfills for Vercel Environment ---
-if (typeof (globalThis as any).DOMMatrix === "undefined") {
-    (globalThis as any).DOMMatrix = class DOMMatrix {
-        constructor() { }
-        static fromFloat32Array() { return new DOMMatrix(); }
-        static fromFloat64Array() { return new DOMMatrix(); }
-    };
-}
-if (typeof (globalThis as any).Path2D === "undefined") {
-    (globalThis as any).Path2D = class Path2D { };
-}
-if (typeof (globalThis as any).ImageData === "undefined") {
-    (globalThis as any).ImageData = class ImageData {
-        constructor() { }
-    };
-}
-if (typeof (globalThis as any).window === "undefined") {
-    (globalThis as any).window = globalThis;
-}
-if (typeof (globalThis as any).self === "undefined") {
-    (globalThis as any).self = globalThis;
-}
-if (typeof (globalThis as any).navigator === "undefined") {
-    (globalThis as any).navigator = { userAgent: "node" };
-}
+// Using both global and globalThis to ensure coverage in all Node.js environments
+const applyPolyfills = () => {
+    const targets = [global, globalThis];
+    targets.forEach((t: any) => {
+        if (typeof t.DOMMatrix === "undefined") {
+            t.DOMMatrix = class DOMMatrix {
+                constructor() { }
+                static fromFloat32Array() { return new DOMMatrix(); }
+                static fromFloat64Array() { return new DOMMatrix(); }
+            };
+        }
+        if (typeof t.Path2D === "undefined") t.Path2D = class Path2D { };
+        if (typeof t.ImageData === "undefined") t.ImageData = class ImageData { constructor() { } };
+        if (typeof t.window === "undefined") t.window = t;
+        if (typeof t.self === "undefined") t.self = t;
+        if (typeof t.navigator === "undefined") t.navigator = { userAgent: "node" };
+        if (typeof t.HTMLCanvasElement === "undefined") t.HTMLCanvasElement = class HTMLCanvasElement { };
+        if (typeof t.HTMLElement === "undefined") t.HTMLElement = class HTMLElement { };
+    });
+};
+applyPolyfills();
 // ----------------------------------------------
 
 import { createClient } from "@/utils/supabase/server";
 import { getEmbedding } from "@/lib/openai/server";
 import { chunkText } from "@/lib/rag/utils";
 import { revalidatePath } from "next/cache";
-
-// PDF parsing
-const pdfParse = require("pdf-parse");
-const pdf = pdfParse.default || pdfParse;
 
 export async function getDocuments() {
     try {
@@ -81,6 +74,11 @@ export async function uploadDocument(formData: FormData) {
         // 1. PDF Parse
         let cleanText = "";
         try {
+            console.log("Parsing PDF (detecting env)...");
+            // Lazy load pdf-parse to ensure polyfills are active
+            const pdfParse = require("pdf-parse");
+            const pdf = pdfParse.default || pdfParse;
+
             console.log("Parsing PDF (with bypass)...");
             const arrayBuffer = await file.arrayBuffer();
             const buffer = Buffer.from(arrayBuffer);
