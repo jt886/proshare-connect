@@ -11,6 +11,11 @@ if (typeof globalThis.DOMMatrix === "undefined") {
 if (typeof globalThis.Path2D === "undefined") {
     (globalThis as any).Path2D = class Path2D { };
 }
+if (typeof globalThis.ImageData === "undefined") {
+    (globalThis as any).ImageData = class ImageData {
+        constructor() { }
+    };
+}
 
 import { createClient } from "@/utils/supabase/server";
 import { getEmbedding } from "@/lib/openai/server";
@@ -121,29 +126,36 @@ export async function uploadDocument(formData: FormData) {
         // 4. Generate Embeddings (Optimized for Vercel)
         if (cleanText.length > 0) {
             try {
-                console.log("Generating embeddings...");
-                const chunks = chunkText(cleanText).slice(0, 50); // Limit to 50 chunks to prevent timeout
-                console.log("Total chunks to embed:", chunks.length);
+                console.log("Generating embeddings (Max 10 chunks)...");
+                const chunks = chunkText(cleanText).slice(0, 10); // Limit to 10 chunks for stability
 
-                const embeddingPromises = chunks.map(async (chunk, i) => {
-                    const embedding = await getEmbedding(chunk);
-                    return {
-                        document_id: doc.id,
-                        content: chunk,
-                        embedding,
-                    };
+                const embeddingPromises = chunks.map(async (chunk) => {
+                    try {
+                        const embedding = await getEmbedding(chunk);
+                        return {
+                            document_id: doc.id,
+                            content: chunk,
+                            embedding,
+                        };
+                    } catch (e: any) {
+                        console.error("Single chunk embedding error:", e.message);
+                        return null;
+                    }
                 });
 
-                const embeddingsData = await Promise.all(embeddingPromises);
-                const { error: embedError } = await supabase.from("document_embeddings").insert(embeddingsData);
+                const results = await Promise.all(embeddingPromises);
+                const embeddingsData = results.filter((item): item is any => item !== null);
 
-                if (embedError) {
-                    console.error("Embedding Storage Error:", embedError.message);
-                } else {
-                    console.log("Embeddings stored successfully.");
+                if (embeddingsData.length > 0) {
+                    const { error: embedError } = await supabase.from("document_embeddings").insert(embeddingsData);
+                    if (embedError) {
+                        console.error("Embedding Storage Error:", embedError.message);
+                    } else {
+                        console.log("Embeddings stored successfully:", embeddingsData.length);
+                    }
                 }
             } catch (e: any) {
-                console.error("Embedding Generation Error:", e.message);
+                console.error("Overall Embedding Generation Error (Continuing anyway):", e.message);
             }
         }
 
