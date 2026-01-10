@@ -1,0 +1,34 @@
+[2026-01-10T06:09:25.599Z] Debug module loaded
+[2026-01-10T06:09:25.641Z] Server: getDocuments started
+[2026-01-10T06:09:25.994Z] Server: Fetched documents count: 4
+[2026-01-10T06:09:28.802Z] Server: getDocuments started
+[2026-01-10T06:09:28.999Z] Server: Fetched documents count: 4
+[2026-01-10T06:09:32.203Z] Server: deleteDocument attempt for ID: 36729b0e-59d3-4f3a-85db-c96c361a1434, Path: 1767991218969_children-11-01299-v2.pdf
+[2026-01-10T06:09:32.376Z] Server: Deleting from DB. User: 6f83b63f-0f69-48fc-a443-3f5c60808989
+[2026-01-10T06:09:32.552Z] Server: DB Delete Error: column documents.user_id does not exist
+[2026-01-10T06:09:37.006Z] Server: deleteDocument attempt for ID: 36729b0e-59d3-4f3a-85db-c96c361a1434, Path: 1767991218969_children-11-01299-v2.pdf
+[2026-01-10T06:09:37.182Z] Server: Deleting from DB. User: 6f83b63f-0f69-48fc-a443-3f5c60808989
+[2026-01-10T06:09:37.355Z] Server: DB Delete Error: column documents.user_id does not exist
+[2026-01-10T06:10:50.241Z] Server: getDocuments started
+[2026-01-10T06:10:50.552Z] Server: Fetched documents count: 4
+[2026-01-10T06:10:54.127Z] Server: deleteDocument attempt for ID: 36729b0e-59d3-4f3a-85db-c96c361a1434, Path: 1767991218969_children-11-01299-v2.pdf
+[2026-01-10T06:10:54.306Z] Server: Deleting from DB. User: 6f83b63f-0f69-48fc-a443-3f5c60808989
+[2026-01-10T06:10:54.515Z] Server: DB Delete successful (or 0 rows affected). Deleting from Storage...
+[2026-01-10T06:10:55.169Z] Server: Storage Delete successful
+[2026-01-10T06:10:55.174Z] Server: deleteDocument flow completed successfully
+[2026-01-10T06:10:55.461Z] Server: getDocuments started
+[2026-01-10T06:10:55.647Z] Server: Fetched documents count: 3
+[2026-01-10T06:11:07.335Z] Server: deleteDocument attempt for ID: 7ebe4301-2d82-4137-9f98-6a3b5d456faf, Path: 1767996163701_children-11-01299-v2.pdf
+[2026-01-10T06:11:07.517Z] Server: Deleting from DB. User: 6f83b63f-0f69-48fc-a443-3f5c60808989
+[2026-01-10T06:11:07.709Z] Server: DB Delete successful (or 0 rows affected). Deleting from Storage...
+[2026-01-10T06:11:08.229Z] Server: Storage Delete successful
+[2026-01-10T06:11:08.234Z] Server: deleteDocument flow completed successfully
+[2026-01-10T06:11:08.574Z] Server: getDocuments started
+[2026-01-10T06:11:08.766Z] Server: Fetched documents count: 2
+[2026-01-10T06:11:10.310Z] Server: deleteDocument attempt for ID: 56aa3e69-8045-47a7-8621-f040aeb5079a, Path: 1767992074014_children-11-01299-v2.pdf
+[2026-01-10T06:11:10.483Z] Server: Deleting from DB. User: 6f83b63f-0f69-48fc-a443-3f5c60808989
+[2026-01-10T06:11:10.667Z] Server: DB Delete successful (or 0 rows affected). Deleting from Storage...
+[2026-01-10T06:11:11.217Z] Server: Storage Delete successful
+[2026-01-10T06:11:11.220Z] Server: deleteDocument flow completed successfully
+[2026-01-10T06:11:11.557Z] Server: getDocuments started
+[2026-01-10T06:11:11.739Z] Server: Fetched documents count: 1
