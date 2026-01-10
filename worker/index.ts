@@ -1,4 +1,5 @@
 /// <reference lib="webworker" />
+// PWA Service Worker v1.1.0 - Force Update 2026-01-10
 export type { };
 declare const self: ServiceWorkerGlobalScope;
 

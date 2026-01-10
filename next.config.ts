@@ -6,6 +6,9 @@ const withPWA = withPWAInit({
   dest: "public",
   disable: false,
   register: true,
+  workboxOptions: {
+    skipWaiting: true,
+  },
 });
 
 const nextConfig: NextConfig = {
