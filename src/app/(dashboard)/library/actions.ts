@@ -1,5 +1,12 @@
 "use server";
 
+// Polyfill for DOMMatrix which is missing in Node environment but required by some PDF.js versions
+if (typeof globalThis.DOMMatrix === "undefined") {
+    (globalThis as any).DOMMatrix = class DOMMatrix {
+        constructor() { }
+    };
+}
+
 import { createClient } from "@/utils/supabase/server";
 import { getEmbedding } from "@/lib/openai/server";
 import { chunkText } from "@/lib/rag/utils";
@@ -8,13 +15,6 @@ import { revalidatePath } from "next/cache";
 // PDF parsing
 const pdfParse = require("pdf-parse");
 const pdf = pdfParse.default || pdfParse;
-
-// Polyfill for DOMMatrix which is missing in Node environment but required by some PDF.js versions
-if (typeof (global as any).DOMMatrix === "undefined") {
-    (global as any).DOMMatrix = class DOMMatrix {
-        constructor() { }
-    };
-}
 
 export async function getDocuments() {
     try {
