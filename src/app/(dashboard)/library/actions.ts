@@ -1,10 +1,15 @@
 "use server";
 
-// Polyfill for DOMMatrix which is missing in Node environment but required by some PDF.js versions
+// Polyfill for browser APIs missing in Node environment but required by pdf-parse
 if (typeof globalThis.DOMMatrix === "undefined") {
     (globalThis as any).DOMMatrix = class DOMMatrix {
         constructor() { }
+        static fromFloat32Array() { return new DOMMatrix(); }
+        static fromFloat64Array() { return new DOMMatrix(); }
     };
+}
+if (typeof globalThis.Path2D === "undefined") {
+    (globalThis as any).Path2D = class Path2D { };
 }
 
 import { createClient } from "@/utils/supabase/server";
@@ -61,10 +66,15 @@ export async function uploadDocument(formData: FormData) {
         // 1. PDF Parse
         let cleanText = "";
         try {
-            console.log("Parsing PDF...");
+            console.log("Parsing PDF (with bypass)...");
             const arrayBuffer = await file.arrayBuffer();
             const buffer = Buffer.from(arrayBuffer);
-            const data = await pdf(buffer);
+
+            // Bypass page rendering to avoid "j is not a function" error in some environments
+            const data = await pdf(buffer, {
+                pagerender: () => ""
+            });
+
             cleanText = data.text.replace(/\s+/g, " ").trim();
             console.log("PDF parsed successfully. Text length:", cleanText.length);
 
