@@ -1,21 +1,54 @@
 "use server";
 
-// Polyfill for browser APIs missing in Node environment but required by pdf-parse
-if (typeof globalThis.DOMMatrix === "undefined") {
-    (globalThis as any).DOMMatrix = class DOMMatrix {
+// --- Comprehensive Polyfills for pdf-parse on Vercel Node.js environment ---
+if (typeof (global as any).window === "undefined") {
+    (global as any).window = global;
+}
+if (typeof (global as any).self === "undefined") {
+    (global as any).self = global;
+}
+if (typeof (global as any).navigator === "undefined") {
+    (global as any).navigator = { userAgent: "node" };
+}
+if (typeof (global as any).document === "undefined") {
+    (global as any).document = {
+        createElement: () => ({
+            getContext: () => ({
+                measureText: () => ({ width: 0 }),
+                fillRect: () => { },
+                drawImage: () => { },
+                putImageData: () => { },
+                createImageData: () => ({ data: [] }),
+            }),
+            style: {},
+            width: 0,
+            height: 0,
+        }),
+        getElementsByTagName: () => [],
+    };
+}
+if (typeof (global as any).DOMMatrix === "undefined") {
+    (global as any).DOMMatrix = class DOMMatrix {
         constructor() { }
         static fromFloat32Array() { return new DOMMatrix(); }
         static fromFloat64Array() { return new DOMMatrix(); }
     };
 }
-if (typeof globalThis.Path2D === "undefined") {
-    (globalThis as any).Path2D = class Path2D { };
+if (typeof (global as any).Path2D === "undefined") {
+    (global as any).Path2D = class Path2D { };
 }
-if (typeof globalThis.ImageData === "undefined") {
-    (globalThis as any).ImageData = class ImageData {
+if (typeof (global as any).ImageData === "undefined") {
+    (global as any).ImageData = class ImageData {
         constructor() { }
     };
 }
+if (typeof (global as any).HTMLCanvasElement === "undefined") {
+    (global as any).HTMLCanvasElement = class HTMLCanvasElement { };
+}
+if (typeof (global as any).HTMLElement === "undefined") {
+    (global as any).HTMLElement = class HTMLElement { };
+}
+// --------------------------------------------------------------------------
 
 import { createClient } from "@/utils/supabase/server";
 import { getEmbedding } from "@/lib/openai/server";
