@@ -34,19 +34,41 @@ export default function LibraryPage() {
             toast.error("No file path available");
             return;
         }
+
+        // Open window immediately to avoid pop-up blockers
+        const newWindow = window.open("", "_blank");
+
+        if (!newWindow) {
+            toast.error("Pop-up was blocked. Please allow pop-ups for this site.");
+            return;
+        }
+
+        // Show loading state in the new window
+        newWindow.document.write(`
+            <html>
+                <head><title>Loading Document...</title></head>
+                <body style="display:flex;justify-content:center;align-items:center;height:100vh;background:#1a1a1a;color:#fff;font-family:sans-serif;">
+                    <div>Loading document...</div>
+                </body>
+            </html>
+        `);
+
         try {
             console.log("Getting file URL...");
             const url = await getFileUrl(path);
             console.log("Received URL:", url);
+
             if (url) {
-                console.log("Opening URL in new tab...");
-                window.open(url, "_blank");
+                console.log("Setting new window location...");
+                newWindow.location.href = url;
             } else {
                 console.error("URL is null or undefined");
+                newWindow.close();
                 toast.error("Could not generate download link.");
             }
         } catch (e) {
             console.error("Error in handleOpenDoc:", e);
+            newWindow.close();
             toast.error("Error opening document.");
         }
     };
