@@ -9,11 +9,11 @@ const withPWA = withPWAInit({
 });
 
 const nextConfig: NextConfig = {
+  serverExternalPackages: ["pdf-parse-fork"],
   experimental: {
     serverActions: {
       bodySizeLimit: '10mb',
     },
-    serverComponentsExternalPackages: ["pdf-parse-fork"],
   },
   images: {
     remotePatterns: [
