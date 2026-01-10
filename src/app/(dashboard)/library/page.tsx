@@ -116,7 +116,11 @@ export default function LibraryPage() {
                 ) : (
                     <div className="grid gap-3">
                         {documents.map((doc) => (
-                            <Card key={doc.id} className="w-full max-w-full p-4 min-h-20 flex items-center justify-between gap-4 active:bg-muted/50 transition-colors">
+                            <Card
+                                key={doc.id}
+                                className="w-full max-w-full p-4 min-h-20 flex items-center justify-between gap-4 active:bg-muted/50 transition-colors cursor-pointer"
+                                onClick={() => handleOpenDoc(doc.file_path || doc.storage_path)}
+                            >
                                 <div className="flex items-center gap-4 flex-1 min-w-0 max-w-full overflow-hidden">
                                     <div className="h-10 w-10 flex items-center justify-center rounded-lg bg-blue-500/10 shrink-0">
                                         <FileText className="h-6 w-6 text-blue-500" />
@@ -127,15 +131,14 @@ export default function LibraryPage() {
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-1 shrink-0">
-                                    <Button variant="ghost" size="icon" className="h-10 w-10" onClick={() => handleOpenDoc(doc.file_path || doc.storage_path)}>
-                                        <ExternalLink className="h-6 w-6" />
-                                        <span className="sr-only">Open</span>
-                                    </Button>
                                     <Button
                                         variant="ghost"
                                         size="icon"
                                         className="h-10 w-10 text-destructive hover:text-destructive hover:bg-destructive/10"
-                                        onClick={() => handleDelete(doc.id, doc.file_path || doc.storage_path)}
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleDelete(doc.id, doc.file_path || doc.storage_path);
+                                        }}
                                         disabled={isDeleting === doc.id}
                                     >
                                         {isDeleting === doc.id ? (
