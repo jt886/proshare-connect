@@ -117,13 +117,13 @@ export default function LibraryPage() {
                     <div className="grid gap-3">
                         {documents.map((doc) => (
                             <Card key={doc.id} className="p-4 flex items-center justify-between gap-4 active:bg-muted/50 transition-colors">
-                                <div className="flex items-center gap-4 overflow-hidden flex-1">
+                                <div className="flex items-center gap-4 flex-1 min-w-0">
                                     <div className="h-10 w-10 flex items-center justify-center rounded-lg bg-blue-500/10 shrink-0">
                                         <FileText className="h-6 w-6 text-blue-500" />
                                     </div>
-                                    <div className="overflow-hidden space-y-1">
+                                    <div className="min-w-0 flex-1 space-y-1">
                                         <p className="font-semibold truncate text-base">{doc.title || doc.name || "Untitled Document"}</p>
-                                        <p className="text-sm text-muted-foreground">{new Date(doc.created_at).toLocaleDateString()}</p>
+                                        <p className="text-sm text-muted-foreground truncate">{new Date(doc.created_at).toLocaleDateString()}</p>
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-1 shrink-0">
