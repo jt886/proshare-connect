@@ -153,12 +153,12 @@ export default function LibraryPage() {
                                 className="w-full max-w-full p-4 min-h-20 flex items-center justify-between gap-4 active:bg-muted/50 transition-colors cursor-pointer"
                                 onClick={() => handleOpenDoc(doc.file_path || doc.storage_path)}
                             >
-                                <div className="flex items-center gap-4 flex-1 min-w-0 max-w-full overflow-hidden">
+                                <div className="flex items-center gap-4 flex-1 min-w-0 w-0 max-w-full">
                                     <div className="h-10 w-10 flex items-center justify-center rounded-lg bg-blue-500/10 shrink-0">
                                         <FileText className="h-6 w-6 text-blue-500" />
                                     </div>
-                                    <div className="min-w-0 flex-1 space-y-1 overflow-hidden">
-                                        <p className="font-semibold text-base truncate max-w-full break-all">{doc.title || doc.name || "Untitled Document"}</p>
+                                    <div className="min-w-0 flex-1 space-y-1">
+                                        <p className="font-semibold text-base truncate">{doc.title || doc.name || "Untitled Document"}</p>
                                         <p className="text-sm text-muted-foreground truncate">{new Date(doc.created_at).toLocaleDateString()}</p>
                                     </div>
                                 </div>
