@@ -47,6 +47,7 @@ export async function getFileUrl(path: string) {
 }
 
 export async function uploadDocument(formData: FormData) {
+    console.log("--- Starting Upload Process ---");
     try {
         const supabase = await createClient();
         const { data: { user } } = await supabase.auth.getUser();
@@ -55,29 +56,41 @@ export async function uploadDocument(formData: FormData) {
 
         const file = formData.get("file") as File;
         if (!file) return { error: "No file provided" };
+        console.log("File detected:", file.name, "(Size:", file.size, ")");
 
-        // 1. PDF Parse & Embeddings (RAG)
+        // 1. PDF Parse
         let cleanText = "";
         try {
+            console.log("Parsing PDF...");
             const arrayBuffer = await file.arrayBuffer();
             const buffer = Buffer.from(arrayBuffer);
             const data = await pdf(buffer);
             cleanText = data.text.replace(/\s+/g, " ").trim();
+            console.log("PDF parsed successfully. Text length:", cleanText.length);
+
+            if (cleanText.length === 0) {
+                console.warn("Warning: PDF text is empty.");
+            }
         } catch (e: any) {
+            console.error("PDF Parsing Error:", e.message);
             return { error: "Failed to parse PDF text for AI." };
         }
 
         // 2. Upload to Storage
+        console.log("Uploading to storage...");
         const fileName = `${user.id}/${Date.now()}_${file.name}`;
         const { data: storageData, error: storageError } = await supabase.storage
             .from("documents")
             .upload(fileName, file);
 
         if (storageError) {
-            return { error: "Failed to upload file to storage." };
+            console.error("Storage Error:", storageError.message);
+            return { error: "Failed to upload file to storage. Did you run the SQL script I provided?" };
         }
+        console.log("Storage upload success:", storageData.path);
 
         // 3. Insert to DB
+        console.log("Inserting document record to DB...");
         const { data: doc, error: dbError } = await supabase
             .from("documents")
             .insert({
@@ -90,30 +103,46 @@ export async function uploadDocument(formData: FormData) {
             .single();
 
         if (dbError) {
+            console.error("DB Insert Error:", dbError.message);
             return { error: "Failed to save document record." };
         }
+        console.log("DB record created. ID:", doc.id);
 
-        // 4. Generate Embeddings (Background-ish)
-        try {
-            const chunks = chunkText(cleanText);
-            const embeddingPromises = chunks.map(async (chunk) => {
-                const embedding = await getEmbedding(chunk);
-                return {
-                    document_id: doc.id,
-                    content: chunk,
-                    embedding,
-                };
-            });
-            const embeddingsData = await Promise.all(embeddingPromises);
-            await supabase.from("document_embeddings").insert(embeddingsData);
-        } catch (e: any) {
-            console.error("Embedding Generation Error:", e.message);
+        // 4. Generate Embeddings (Optimized for Vercel)
+        if (cleanText.length > 0) {
+            try {
+                console.log("Generating embeddings...");
+                const chunks = chunkText(cleanText).slice(0, 50); // Limit to 50 chunks to prevent timeout
+                console.log("Total chunks to embed:", chunks.length);
+
+                const embeddingPromises = chunks.map(async (chunk, i) => {
+                    const embedding = await getEmbedding(chunk);
+                    return {
+                        document_id: doc.id,
+                        content: chunk,
+                        embedding,
+                    };
+                });
+
+                const embeddingsData = await Promise.all(embeddingPromises);
+                const { error: embedError } = await supabase.from("document_embeddings").insert(embeddingsData);
+
+                if (embedError) {
+                    console.error("Embedding Storage Error:", embedError.message);
+                } else {
+                    console.log("Embeddings stored successfully.");
+                }
+            } catch (e: any) {
+                console.error("Embedding Generation Error:", e.message);
+            }
         }
 
+        console.log("--- Process Completed Successfully ---");
         revalidatePath("/library");
         return { success: true };
 
     } catch (err: any) {
+        console.error("Unexpected Error in uploadDocument:", err.message);
         return { error: err.message || "Something went wrong" };
     }
 }
