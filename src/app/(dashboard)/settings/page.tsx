@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { NotificationToggle } from "@/components/features/notifications/NotificationToggle";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { deleteAccount } from "./actions";
@@ -38,6 +39,8 @@ export default function SettingsPage() {
                 </Button>
                 <h1 className="text-2xl font-bold">Settings</h1>
             </div>
+
+            <NotificationToggle />
 
             <Card className="border-destructive/20 bg-destructive/5 overflow-hidden">
                 <CardHeader className="bg-destructive/10">

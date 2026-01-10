@@ -1,7 +1,6 @@
-"use client";
-
+import { NotificationBell } from "@/components/features/notifications/NotificationBell";
 import Link from "next/link";
-import { Bell, Menu } from "lucide-react";
+import { Menu } from "lucide-react";
 
 export function Header() {
     return (
@@ -13,9 +12,7 @@ export function Header() {
                     </Link>
                 </div>
                 <div className="flex items-center gap-4">
-                    <button className="text-muted-foreground hover:text-foreground">
-                        <Bell className="h-5 w-5" />
-                    </button>
+                    <NotificationBell />
                     <button className="text-muted-foreground hover:text-foreground">
                         <Menu className="h-5 w-5" />
                     </button>
