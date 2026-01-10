@@ -9,6 +9,13 @@ import { revalidatePath } from "next/cache";
 const pdfParse = require("pdf-parse");
 const pdf = pdfParse.default || pdfParse;
 
+// Polyfill for DOMMatrix which is missing in Node environment but required by some PDF.js versions
+if (typeof (global as any).DOMMatrix === "undefined") {
+    (global as any).DOMMatrix = class DOMMatrix {
+        constructor() { }
+    };
+}
+
 export async function getDocuments() {
     try {
         const supabase = await createClient();
