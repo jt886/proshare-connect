@@ -28,15 +28,25 @@ export default function LibraryPage() {
     }, []);
 
     const handleOpenDoc = async (path: string) => {
-        if (!path) return;
+        console.log("handleOpenDoc called with path:", path);
+        if (!path) {
+            console.error("No path provided!");
+            toast.error("No file path available");
+            return;
+        }
         try {
+            console.log("Getting file URL...");
             const url = await getFileUrl(path);
+            console.log("Received URL:", url);
             if (url) {
+                console.log("Opening URL in new tab...");
                 window.open(url, "_blank");
             } else {
+                console.error("URL is null or undefined");
                 toast.error("Could not generate download link.");
             }
         } catch (e) {
+            console.error("Error in handleOpenDoc:", e);
             toast.error("Error opening document.");
         }
     };
