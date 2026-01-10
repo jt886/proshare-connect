@@ -150,18 +150,18 @@ export default function LibraryPage() {
                         {documents.map((doc) => (
                             <Card
                                 key={doc.id}
-                                className="w-full max-w-full p-4 min-h-20 flex items-center justify-between gap-4 active:bg-muted/50 transition-colors cursor-pointer"
+                                className="w-full max-w-full p-4 min-h-20 grid grid-cols-[auto_1fr_auto] items-center gap-4 active:bg-muted/50 transition-colors cursor-pointer"
                                 onClick={() => handleOpenDoc(doc.file_path || doc.storage_path)}
                             >
-                                <div className="flex items-center gap-4 flex-1 min-w-0 w-0 max-w-full">
-                                    <div className="h-10 w-10 flex items-center justify-center rounded-lg bg-blue-500/10 shrink-0">
-                                        <FileText className="h-6 w-6 text-blue-500" />
-                                    </div>
-                                    <div className="min-w-0 flex-1 space-y-1">
-                                        <p className="font-semibold text-base truncate">{doc.title || doc.name || "Untitled Document"}</p>
-                                        <p className="text-sm text-muted-foreground truncate">{new Date(doc.created_at).toLocaleDateString()}</p>
-                                    </div>
+                                <div className="h-10 w-10 flex items-center justify-center rounded-lg bg-blue-500/10 shrink-0">
+                                    <FileText className="h-6 w-6 text-blue-500" />
                                 </div>
+
+                                <div className="min-w-0 overflow-hidden space-y-1">
+                                    <p className="font-semibold text-base truncate block">{doc.title || doc.name || "Untitled Document"}</p>
+                                    <p className="text-sm text-muted-foreground truncate block">{new Date(doc.created_at).toLocaleDateString()}</p>
+                                </div>
+
                                 <div className="flex items-center gap-1 shrink-0">
                                     <Button
                                         variant="ghost"
