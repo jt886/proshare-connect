@@ -13,7 +13,7 @@ const newsData = [
         bg: "bg-amber-500/10",
         items: [
             { title: "OpenAI 'Operator' agent launching in January", trend: "+85%", hot: true, url: "https://techcrunch.com/?s=openai+operator" },
-            { title: "DeepSeek-V3 sets new open source benchmarks", trend: "+42%", hot: false, url: "https://github.com/deepseek-ai/DeepSeek-V3" }
+            { title: "DeepSeek-V3 sets new open source benchmarks", trend: "+42%", hot: false, url: "/research" }
         ]
     },
     {
@@ -63,8 +63,8 @@ export function HomeTrends() {
                                 <Link
                                     key={idx}
                                     href={item.url}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
+                                    target={item.url.startsWith("http") ? "_blank" : undefined}
+                                    rel={item.url.startsWith("http") ? "noopener noreferrer" : undefined}
                                     className="flex items-start justify-between group active:opacity-70 transition-all"
                                 >
                                     <p className="text-sm font-medium leading-tight group-hover:text-primary transition-colors flex-1 pr-4">
