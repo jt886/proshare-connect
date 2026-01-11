@@ -67,10 +67,7 @@ export function CommunityChat() {
             const { data, error } = await getCommunityMessages();
             if (error) {
                 console.error("Failed to load messages:", error);
-                // Only show toast if we have absolutely nothing to show
-                if (messages.length === 0) {
-                    toast.error("Failed to load messages");
-                }
+                // User requested to suppress this error toast entirely
             } else if (data) {
                 setMessages(data as Message[]);
             }
