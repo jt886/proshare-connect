@@ -5,7 +5,6 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { BottomNav } from "@/components/layout/BottomNav";
 import { Header } from "@/components/layout/Header";
 import { Toaster } from "@/components/ui/sonner";
-import { DebugNotificationButton } from "@/components/debug/DebugNotificationButton";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -66,7 +65,6 @@ export default function RootLayout({
             </main>
             <BottomNav />
             <Toaster />
-            <DebugNotificationButton />
           </div>
         </ThemeProvider>
       </body>

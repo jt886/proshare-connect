@@ -87,6 +87,28 @@ export function CommunityChat() {
                     const newMessage = payload.new;
                     if (!newMessage) return;
 
+                    // Step 3: Chat Notification Logic
+                    // Only notify if the message is NOT from the current user
+                    if (newMessage.user_id !== currentUserId) {
+                        // Fetch profile nickname for better notification
+                        const { data: senderProfile } = await supabase
+                            .from("profiles")
+                            .select("nickname")
+                            .eq("id", newMessage.user_id)
+                            .single();
+
+                        const senderName = senderProfile?.nickname || "Someone";
+
+                        // Trigger notification
+                        toast.message(senderName, {
+                            description: newMessage.content,
+                            // action: {
+                            //     label: "View",
+                            //     onClick: () => scrollToBottom()
+                            // }
+                        });
+                    }
+
                     // Fetch the profile for the new message
                     const { data: profile } = await supabase
                         .from("profiles")
