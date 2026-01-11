@@ -106,31 +106,35 @@ export function CommunityChat() {
         if (!input.trim() || isLoading) return;
 
         setIsLoading(true);
+        // Toast for immediate feedback
+        const toastId = toast.loading("Sending message...");
+
         const result = await sendCommunityMessage(input);
-        console.log("Send Message Result:", result);
+
         if (result.error) {
             console.error("Send Message Error:", result.error);
+            toast.dismiss(toastId);
             toast.error(result.error);
         } else {
-            // Optimistic update (or manual append to ensure visibility)
-            if (currentUserId) {
-                const optimisticMsg: Message = {
-                    id: Date.now().toString(), // temp id
-                    user_id: currentUserId,
-                    user_email: "", // Not needed for display if we have ID
-                    content: input,
-                    created_at: new Date().toISOString(),
-                    profiles: {
-                        nickname: "You", // Or fetch current profile nickname if available
-                        avatar_url: null
-                    }
-                };
-                // Only append if not already added by realtime (duplicates handled by key usually, but simple append is safe for UX)
-                // Realtime might duplicate it, but we can de-dupe later if needed. For now, visibility is priority.
-                // Better approach: fetch latest or rely on realtime. But user said "nothing happens".
-                // Let's just clear input for now, but if we want to show it:
-                setMessages(prev => [...prev, optimisticMsg]);
-            }
+            toast.dismiss(toastId);
+            // toast.success("Sent!"); // Optional: overly noisy if chat is fast
+
+            // Optimistic update
+            // Even if currentUserId is missing (rare race condition), we show it as "Me"
+            const optimisticId = currentUserId || "temp-me";
+            const optimisticMsg: Message = {
+                id: Date.now().toString(), // temp id
+                user_id: optimisticId,
+                user_email: "",
+                content: input,
+                created_at: new Date().toISOString(),
+                profiles: {
+                    nickname: "You",
+                    avatar_url: null
+                }
+            };
+
+            setMessages(prev => [...prev, optimisticMsg]);
             setInput("");
         }
         setIsLoading(false);
