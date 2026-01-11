@@ -66,7 +66,11 @@ export function CommunityChat() {
         const fetchMessages = async () => {
             const { data, error } = await getCommunityMessages();
             if (error) {
-                toast.error("Failed to load messages");
+                console.error("Failed to load messages:", error);
+                // Only show toast if we have absolutely nothing to show
+                if (messages.length === 0) {
+                    toast.error("Failed to load messages");
+                }
             } else if (data) {
                 setMessages(data as Message[]);
             }
