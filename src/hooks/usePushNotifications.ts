@@ -46,39 +46,53 @@ export function usePushNotifications() {
         }
     };
 
-    const subscribe = async () => {
+    const subscribe = async (): Promise<{ success: boolean; error?: string }> => {
         setLoading(true);
         try {
             const permissionResult = await Notification.requestPermission();
             setPermission(permissionResult);
 
-            if (permissionResult === 'granted') {
-                const registration = await navigator.serviceWorker.ready;
-                const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+            if (permissionResult !== 'granted') {
+                return { success: false, error: 'Permission denied by user' };
+            }
 
-                if (!vapidKey) {
-                    throw new Error("VAPID Public Key not found");
-                }
+            const registration = await navigator.serviceWorker.ready;
+            const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
 
-                const sub = await registration.pushManager.subscribe({
+            if (!vapidKey) {
+                console.error("VAPID Key missing in env");
+                return { success: false, error: 'Configuration Error: VAPID Key missing' };
+            }
+
+            let sub: PushSubscription | null = null;
+            try {
+                sub = await registration.pushManager.subscribe({
                     userVisibleOnly: true,
                     applicationServerKey: urlBase64ToUint8Array(vapidKey),
                 });
-
-                setSubscription(sub);
-
-                // Serialize for server
-                const subJSON = JSON.parse(JSON.stringify(sub));
-                await subscribeUser(subJSON);
-
-                return true;
+            } catch (subError: any) {
+                console.error("PushManager Subscribe Error:", subError);
+                return { success: false, error: `Browser Subscribe Failed: ${subError.message}` };
             }
-        } catch (error) {
+
+            setSubscription(sub);
+
+            // Serialize for server
+            const subJSON = JSON.parse(JSON.stringify(sub));
+            const serverResult = await subscribeUser(subJSON);
+
+            if (serverResult.error) {
+                return { success: false, error: `Server Save Failed: ${serverResult.error}` };
+            }
+
+            return { success: true };
+
+        } catch (error: any) {
             console.error('Failed to subscribe', error);
+            return { success: false, error: error.message || 'Unknown error occurred' };
         } finally {
             setLoading(false);
         }
-        return false;
     };
 
     return { isSupported, permission, subscription, subscribe, loading };

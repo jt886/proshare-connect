@@ -11,10 +11,10 @@ export function NotificationToggle() {
 
     const handleSubscribe = async () => {
         const result = await subscribe();
-        if (result) {
+        if (result.success) {
             toast.success("Notifications enabled!");
         } else {
-            toast.error("Failed to enable notifications. Please check browser settings.");
+            toast.error(result.error || "Failed to enable notifications.");
         }
     };
 
