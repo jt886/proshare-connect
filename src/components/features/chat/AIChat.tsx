@@ -24,11 +24,32 @@ export function AIChat() {
     const [input, setInput] = useState("");
     const [isLoading, setIsLoading] = useState(false);
     const scrollRef = useRef<HTMLDivElement>(null);
+    const messageContainerRef = useRef<HTMLDivElement>(null);
 
-    // Auto-scroll to bottom
+    // Scroll to bottom helper
+    const scrollToBottom = (smooth = true) => {
+        if (messageContainerRef.current) {
+            const container = messageContainerRef.current;
+            if (smooth) {
+                container.scrollTo({
+                    top: container.scrollHeight,
+                    behavior: 'smooth'
+                });
+            } else {
+                container.scrollTop = container.scrollHeight;
+            }
+        }
+    };
+
+    // Auto-scroll to bottom when messages change
     useEffect(() => {
-        scrollRef.current?.scrollIntoView({ behavior: "smooth" });
+        scrollToBottom(true);
     }, [messages]);
+
+    // Scroll to bottom on mount (instant)
+    useEffect(() => {
+        scrollToBottom(false);
+    }, []);
 
     const handleSend = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -69,7 +90,17 @@ export function AIChat() {
 
     return (
         <div className="flex flex-col h-full bg-background font-sans">
-            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+            {/* Scrollable Message Area */}
+            <div
+                ref={messageContainerRef}
+                className="flex-1 overflow-y-auto overflow-x-hidden p-4 pb-[calc(5rem+env(safe-area-inset-bottom))] md:pb-4 space-y-4 overscroll-contain touch-auto"
+                style={{
+                    WebkitOverflowScrolling: 'touch',
+                    minHeight: 0,
+                    maxHeight: '100%',
+                    touchAction: 'pan-y'
+                } as React.CSSProperties}
+            >
                 {messages.map((message) => (
                     <div
                         key={message.id}
@@ -78,8 +109,8 @@ export function AIChat() {
                     >
                         <div
                             className={`max-w-[85%] rounded-2xl px-4 py-3 ${message.role === "user"
-                                    ? "bg-primary text-primary-foreground shadow-sm"
-                                    : "bg-secondary text-secondary-foreground shadow-none"
+                                ? "bg-primary text-primary-foreground shadow-sm"
+                                : "bg-secondary text-secondary-foreground shadow-none"
                                 }`}
                         >
                             <p className="text-sm whitespace-pre-wrap leading-relaxed">
@@ -103,7 +134,8 @@ export function AIChat() {
                 <div ref={scrollRef} />
             </div>
 
-            <div className="p-4 border-t bg-background/80 backdrop-blur-md">
+            {/* Fixed Input Area */}
+            <div className="flex-none p-4 border-t bg-background/80 backdrop-blur-md pb-[calc(1rem+env(safe-area-inset-bottom))]">
                 <form onSubmit={handleSend} className="flex gap-2">
                     <Input
                         value={input}

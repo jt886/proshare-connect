@@ -120,8 +120,19 @@
     @apply border-border outline-ring/50;
   }
 
+  html,
   body {
     @apply bg-background text-foreground;
+    overflow-x: hidden;
+  }
+
+  /* Prevent body scroll when chat page is active */
+  /* Note: Using JavaScript in page.tsx to set body styles for better compatibility */
+  
+  /* Allow scrolling only in message container */
+  [data-message-container] {
+    touch-action: pan-y !important;
+    -webkit-overflow-scrolling: touch;
   }
 }
 

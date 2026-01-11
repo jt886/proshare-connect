@@ -34,3 +34,18 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+### Environment Variables
+
+以下の環境変数をVercelダッシュボードで設定してください：
+
+1. **NEXT_PUBLIC_SUPABASE_URL** - SupabaseプロジェクトのURL
+2. **NEXT_PUBLIC_SUPABASE_ANON_KEY** - Supabaseの匿名キー
+3. **OPENAI_API_KEY** - OpenAI APIキー
+
+設定方法：
+1. Vercelダッシュボードでプロジェクトを開く
+2. Settings → Environment Variables に移動
+3. 上記の環境変数を追加
+
+Antigravityプロジェクトから引き継ぐ場合は、同じ環境変数名を使用してください。

@@ -25,18 +25,30 @@ export async function getCommunityMessages() {
     return { data };
 }
 
+import { generateEmbedding } from "@/utils/ai/vector-service";
+
 export async function sendCommunityMessage(content: string) {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
 
     if (!user) return { error: "Unauthorized" };
 
+    let embedding: number[] | null = null;
+    try {
+        // Auto-learning: Vectorize the message content
+        embedding = await generateEmbedding(content.trim());
+    } catch (e) {
+        console.error("Failed to generate embedding for chat:", e);
+        // Continue sending message even if embedding fails, but log it
+    }
+
     const { error } = await supabase
         .from("community_messages")
         .insert({
             user_id: user.id,
             user_email: user.email,
-            content: content.trim()
+            content: content.trim(),
+            embedding: embedding // Save the vector
         });
 
     if (error) {

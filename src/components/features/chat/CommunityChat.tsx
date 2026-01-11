@@ -26,6 +26,7 @@ export function CommunityChat() {
     const [isLoading, setIsLoading] = useState(false);
     const [currentUserId, setCurrentUserId] = useState<string | null>(null);
     const scrollRef = useRef<HTMLDivElement>(null);
+    const messageContainerRef = useRef<HTMLDivElement>(null);
     const supabase = createClient();
 
     useEffect(() => {
@@ -97,8 +98,30 @@ export function CommunityChat() {
         };
     }, [currentUserId]); // Add currentUserId to dependency array for correct matching
 
+    // Scroll to bottom helper
+    const scrollToBottom = (smooth = true) => {
+        if (messageContainerRef.current) {
+            const container = messageContainerRef.current;
+            if (smooth) {
+                container.scrollTo({
+                    top: container.scrollHeight,
+                    behavior: 'smooth'
+                });
+            } else {
+                container.scrollTop = container.scrollHeight;
+            }
+        }
+    };
+
+    // Auto-scroll to bottom when messages change
     useEffect(() => {
-        scrollRef.current?.scrollIntoView({ behavior: "smooth" });
+        if (messages.length > 0) {
+            // Use setTimeout to ensure DOM is updated, especially for initial load
+            const timer = setTimeout(() => {
+                scrollToBottom(messages.length > 1);
+            }, 50);
+            return () => clearTimeout(timer);
+        }
     }, [messages]);
 
     const handleSend = async (e: React.FormEvent) => {
@@ -141,8 +164,19 @@ export function CommunityChat() {
     };
 
     return (
-        <div className="flex flex-col h-full bg-background font-sans">
-            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        <div className="flex flex-col h-full bg-background font-sans" style={{ height: '100%', minHeight: 0 }}>
+            {/* Scrollable Message Area */}
+            <div
+                ref={messageContainerRef}
+                data-message-container
+                className="flex-1 overflow-y-auto overflow-x-hidden p-4 pb-[calc(5rem+env(safe-area-inset-bottom))] md:pb-4 space-y-4 overscroll-contain touch-auto"
+                style={{
+                    WebkitOverflowScrolling: 'touch',
+                    minHeight: 0,
+                    maxHeight: '100%',
+                    touchAction: 'pan-y'
+                } as React.CSSProperties}
+            >
                 {messages.map((msg) => {
                     const isMe = msg.user_id === currentUserId;
                     const displayName = msg.profiles?.nickname || msg.user_email?.split("@")[0] || "Unknown User";
@@ -179,7 +213,8 @@ export function CommunityChat() {
                 <div ref={scrollRef} />
             </div>
 
-            <div className="p-4 border-t bg-background/80 backdrop-blur-md">
+            {/* Fixed Input Area */}
+            <div className="flex-none p-4 border-t bg-background/80 backdrop-blur-md pb-[calc(1rem+env(safe-area-inset-bottom))]">
                 <form onSubmit={handleSend} className="flex gap-2">
                     <Input
                         value={input}

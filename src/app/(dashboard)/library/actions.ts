@@ -1,7 +1,7 @@
 "use server";
 
 import { createClient } from "@/utils/supabase/server";
-import { getEmbedding } from "@/lib/openai/server";
+import { generateEmbedding } from "@/utils/ai/vector-service";
 import { chunkText } from "@/lib/rag/utils";
 import { revalidatePath } from "next/cache";
 
@@ -116,7 +116,7 @@ export async function uploadDocument(formData: FormData) {
 
                 const embeddingPromises = chunks.map(async (chunk) => {
                     try {
-                        const embedding = await getEmbedding(chunk);
+                        const embedding = await generateEmbedding(chunk);
                         return {
                             document_id: doc.id,
                             content: chunk,
