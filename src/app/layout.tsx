@@ -65,6 +65,12 @@ export default function RootLayout({
             </main>
             <BottomNav />
             <Toaster />
+            {/* DEBUG BANNER - REMOVE AFTER VERIFICATION */}
+            <div className="fixed bottom-20 left-0 right-0 z-50 pointer-events-none flex justify-center opacity-50">
+              <span className="bg-red-500 text-white text-[10px] px-2 py-0.5 rounded-full">
+                DEPLOY DEBUG: v1.5.3
+              </span>
+            </div>
           </div>
         </ThemeProvider>
       </body>
