@@ -63,8 +63,21 @@ export default function RootLayout({
               {children}
             </main>
             <BottomNav />
-            <Toaster />
+            {/* <Toaster /> */}
           </div>
+          <script
+            dangerouslySetInnerHTML={{
+              __html: `
+                if ('serviceWorker' in navigator) {
+                  navigator.serviceWorker.getRegistrations().then(registrations => {
+                    for (let registration of registrations) {
+                      registration.unregister();
+                    }
+                  });
+                }
+              `,
+            }}
+          />
         </ThemeProvider>
       </body>
     </html>
