@@ -58,7 +58,11 @@ export function GlobalNotificationListener() {
 
                             // Trigger global notification (Top-Center per layout config)
                             toast.info(senderName, {
-                                description: newMessage.content,
+                                description: (
+                                    <div className="max-h-[200px] overflow-y-auto whitespace-pre-wrap pr-2 text-sm">
+                                        {newMessage.content}
+                                    </div>
+                                ),
                                 duration: 4000,
                             });
                         }
