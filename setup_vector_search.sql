@@ -52,6 +52,9 @@ using hnsw (embedding vector_cosine_ops);
 -- This function matches query embedding against BOTH Documents (knowledge base) 
 -- and Community Messages (chat history) to return the most relevant context.
 
+-- DROP first to allow return type changes (author_name added)
+drop function if exists match_mixed_context(vector, float, int);
+
 create or replace function match_mixed_context (
   query_embedding vector(1536),
   match_threshold float,
@@ -61,6 +64,7 @@ returns table (
   source_type text,   -- 'document' or 'message'
   id uuid,            -- original record ID
   content text,       -- textual content
+  author_name text,   -- nickname or 'System'
   similarity float,   -- cosine similarity score (0-1)
   created_at timestamp with time zone
 )
@@ -69,11 +73,12 @@ as $$
 begin
   return query
   select * from (
-    -- Search Documents (matching against chunks in document_embeddings)
+    -- Search Documents
     select 
       'document'::text as source_type,
       d.id as id,
       de.content as content,
+      'System'::text as author_name,
       1 - (de.embedding <=> query_embedding) as similarity,
       d.created_at as created_at
     from document_embeddings de
@@ -87,9 +92,11 @@ begin
       'message'::text as source_type,
       m.id as id,
       m.content as content,
+      coalesce(p.nickname, 'Unknown') as author_name,
       1 - (m.embedding <=> query_embedding) as similarity,
       m.created_at as created_at
     from community_messages m
+    left join profiles p on m.user_id = p.id
     where m.embedding is not null
     and 1 - (m.embedding <=> query_embedding) > match_threshold
   ) as combined_results

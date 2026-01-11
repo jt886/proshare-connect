@@ -1,7 +1,8 @@
 "use server";
 
 import { createClient } from "@/utils/supabase/server";
-import { getEmbedding, openai } from "@/lib/openai/server";
+import { generateEmbedding } from "@/utils/ai/vector-service";
+import { openai } from "@/lib/openai/server";
 
 export type ChatResponse = {
     data: string | null;
@@ -16,61 +17,73 @@ export async function chatWithRAG(messages: any[]): Promise<ChatResponse> {
         const lastMessage = messages[messages.length - 1];
         const query = lastMessage.content;
 
-        // 2. Generate embedding for query
-        const queryEmbedding = await getEmbedding(query);
+        // 2. Generate embedding for query (Use improved service)
+        let queryEmbedding: number[] = [];
+        try {
+            queryEmbedding = await generateEmbedding(query);
+        } catch (e) {
+            console.error("Embedding failed:", e);
+            // Fallback: If embedding fails, we can still chat without context
+            // But better to return specific error or try keyword search (not implemented)
+        }
 
-        // 3. Search for relevant context
-        console.log("Chat Action: fetching context...");
+        // 3. Search for relevant context using Mixed Search
+        // Note: author_name requires the updated SQL function. 
+        // If SQL not updated, this might throw error or return null for author_name.
+        console.log("Chat Action: Searching mixed context...");
 
-        const [docsResult, communityResult] = await Promise.all([
-            supabase.rpc('match_documents', {
+        let searchResults: any[] = [];
+        if (queryEmbedding.length > 0) {
+            const { data, error } = await supabase.rpc('match_mixed_context', {
                 query_embedding: queryEmbedding,
-                match_threshold: 0.3,
-                match_count: 5
-            }),
-            supabase
-                .from("community_messages")
-                .select(`
-                    content,
-                    created_at,
-                    profiles:user_id (nickname)
-                `)
-                .order("created_at", { ascending: false })
-        ]);
+                match_threshold: 0.4, // Slightly higher threshold for better quality
+                match_count: 8 // Get enough context from both sources
+            });
 
-        const documents = docsResult.data;
-        const communityMessages = communityResult.data;
+            if (error) {
+                console.error("Vector Search Error:", error);
+            } else {
+                searchResults = data || [];
+            }
+        }
 
-        if (docsResult.error) console.error("Search error:", docsResult.error);
-        if (communityResult.error) console.error("Community fetch error:", communityResult.error);
+        // 4. Separate results
+        const documents = searchResults.filter(r => r.source_type === 'document');
+        const chatMessages = searchResults.filter(r => r.source_type === 'message');
 
-        // 4. Construct system prompt
-        const contextText = documents?.map((doc: any) => doc.content).join("\n---\n") || "No relevant documents found.";
-        const communityText = communityMessages?.reverse().map((m: any) =>
-            `[${new Date(m.created_at).toLocaleTimeString()}] ${m.profiles?.nickname || "User"}: ${m.content}`
-        ).join("\n") || "No recent community activity.";
+        // 5. Construct System Prompt
+        const docText = documents.map(d =>
+            `[Document] ${d.content}`
+        ).join("\n\n") || "No relevant documents.";
 
-        const systemPrompt = `You are a helpful assistant for ProShare Connect.
-  You have access to a knowledge library and recent community chat messages.
-  
-  COMMUNITY CHAT HISTORY (Recent):
-  ${communityText}
+        const chatText = chatMessages.map(m =>
+            `[${new Date(m.created_at).toLocaleDateString()}] ${m.author_name || "User"}: ${m.content}`
+        ).join("\n") || "No relevant chat history.";
 
-  KNOWLEDGE LIBRARY CONTEXT:
-  ${contextText}
+        const systemPrompt = `You are ProShare AI, a helpful assistant for the "ProShare Connect" community.
+You have access to a Knowledge Library (documents) and Community Chat History (messages).
 
-  INSTRUCTIONS:
-  - If the user asks about recent discussions or what others are saying, refer to the COMMUNITY CHAT HISTORY.
-  - If the user asks technical or domain questions, prioritize the KNOWLEDGE LIBRARY CONTEXT.
-  - If the answer is not in either, use your general knowledge but mention it's outside the provided context.`;
+### 📚 RELEVANT KNOWLEDGE LIBRARY
+${docText}
 
-        // 5. Call OpenAI for final response
+### 💬 RELEVANT COMMUNITY CHAT
+${chatText}
+
+### INSTRUCTIONS
+- Answer the user's question based on the context provided above.
+- If the answer is found in the **Knowledge Library**, cite it as a reliable source.
+- If the answer is found in the **Community Chat**, mention who said it (e.g., "As John mentioned in the chat...").
+- If the answer is not found in either, say so, but try to answer using your general knowledge if appropriate (clarify that it's not from the library).
+- Be concise and professional.`;
+
+        // 6. Call OpenAI
         const completion = await openai.chat.completions.create({
             model: "gpt-4o",
             messages: [
                 { role: "system", content: systemPrompt },
                 ...messages.map((m: any) => ({ role: m.role, content: m.content })),
             ],
+            temperature: 0.7
         });
 
         return { data: completion.choices[0].message.content };

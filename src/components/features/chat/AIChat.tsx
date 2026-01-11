@@ -14,6 +14,7 @@ interface Message {
 }
 
 export function AIChat() {
+    // Initialize with default message, but effect will overwrite if storage exists
     const [messages, setMessages] = useState<Message[]>([
         {
             id: "1",
@@ -25,6 +26,25 @@ export function AIChat() {
     const [isLoading, setIsLoading] = useState(false);
     const scrollRef = useRef<HTMLDivElement>(null);
     const messageContainerRef = useRef<HTMLDivElement>(null);
+
+    // Load from localStorage on mount
+    useEffect(() => {
+        const saved = localStorage.getItem("ai_chat_history_v1");
+        if (saved) {
+            try {
+                setMessages(JSON.parse(saved));
+            } catch (e) {
+                console.error("Failed to parse chat history", e);
+            }
+        }
+    }, []);
+
+    // Save to localStorage whenever messages change
+    useEffect(() => {
+        if (messages.length > 0) {
+            localStorage.setItem("ai_chat_history_v1", JSON.stringify(messages));
+        }
+    }, [messages]);
 
     // Scroll to bottom helper
     const scrollToBottom = (smooth = true) => {

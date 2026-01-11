@@ -77,8 +77,16 @@ export default function ChatPage() {
                 {/* Chat Area (Scrollable) */}
                 <Card className="flex-1 flex flex-col overflow-hidden min-h-0 border-0 rounded-none md:border md:rounded-2xl shadow-none md:shadow-md bg-transparent">
                     <div className="flex-1 relative h-full overflow-hidden">
-                        {/* We need to ensure the inner chat component handles the scrolling with overflow-y-auto */}
-                        {activeTab === "ai" ? <AIChat /> : <CommunityChat />}
+                        {/* 
+                           Keep both components mounted effectively caching their state. 
+                           Use generic hidden utility or direct styling.
+                        */}
+                        <div className={cn("h-full w-full", activeTab === "ai" ? "flex flex-col" : "hidden")}>
+                            <AIChat />
+                        </div>
+                        <div className={cn("h-full w-full", activeTab === "community" ? "flex flex-col" : "hidden")}>
+                            <CommunityChat />
+                        </div>
                     </div>
                 </Card>
             </div>
