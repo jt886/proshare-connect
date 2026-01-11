@@ -56,6 +56,12 @@ export function BottomNav() {
                                     transition={{ type: "spring", stiffness: 300, damping: 30 }}
                                 />
                             )}
+                            {/* Unread Badge (UI Only) */}
+                            {label === "Chat" && (
+                                <div className="absolute left-[calc(50%+4px)] top-2 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center shadow-sm z-20 border border-background leading-tight">
+                                    5
+                                </div>
+                            )}
                             <Icon className={cn("h-6 w-6 mb-1 z-10", isActive && "fill-current")} />
                             <span className="text-[10px] font-medium z-10">{label}</span>
                         </Link>
