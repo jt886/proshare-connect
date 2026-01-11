@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { NotificationToggle } from "@/components/features/notifications/NotificationToggle";
+import { ResetAppButton } from "@/components/features/settings/ResetAppButton";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { deleteAccount } from "./actions";
@@ -92,9 +93,13 @@ export default function SettingsPage() {
                 </CardContent>
             </Card>
 
+            <div className="mt-8 mb-4">
+                <ResetAppButton />
+            </div>
+
             <div className="text-center">
                 <p className="text-xs text-muted-foreground opacity-50">
-                    ProShare Connect v1.0.0
+                    ProShare Connect v1.3.0 (Stable)
                 </p>
             </div>
         </div>

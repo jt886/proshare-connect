@@ -8,14 +8,18 @@ create table if not exists public.profiles (
 );
 
 -- Enable RLS for profiles
+-- Enable RLS for profiles
 alter table public.profiles enable row level security;
 
+drop policy if exists "Public profiles are viewable by everyone." on public.profiles;
 create policy "Public profiles are viewable by everyone." on public.profiles
   for select using (true);
 
+drop policy if exists "Users can insert their own profile." on public.profiles;
 create policy "Users can insert their own profile." on public.profiles
   for insert with check (auth.uid() = id);
 
+drop policy if exists "Users can update own profile." on public.profiles;
 create policy "Users can update own profile." on public.profiles
   for update using (auth.uid() = id);
 
@@ -31,14 +35,27 @@ create table if not exists public.community_messages (
 -- Enable RLS for community_messages
 alter table public.community_messages enable row level security;
 
+drop policy if exists "Anyone can read messages." on public.community_messages;
 create policy "Anyone can read messages." on public.community_messages
   for select using (true);
 
+drop policy if exists "Authenticated users can insert messages." on public.community_messages;
 create policy "Authenticated users can insert messages." on public.community_messages
   for insert with check (auth.uid() = user_id);
 
 -- Enable Realtime for community_messages
-alter publication supabase_realtime add table community_messages;
+do $$
+begin
+  if not exists (
+    select 1 from pg_publication_tables 
+    where pubname = 'supabase_realtime' 
+    and schemaname = 'public' 
+    and tablename = 'community_messages'
+  ) then
+    alter publication supabase_realtime add table community_messages;
+  end if;
+end;
+$$;
 
 -- Function to handle new user creation (auto-create profile)
 create or replace function public.handle_new_user()

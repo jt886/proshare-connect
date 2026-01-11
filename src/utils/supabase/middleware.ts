@@ -56,9 +56,5 @@ export async function updateSession(request: NextRequest) {
         return NextResponse.redirect(url)
     }
 
-    // NUCLEAR CACHE CLEAR: Force browser to clear cache to get off v1.0.0
-    // We only clear "cache" to preserve login "cookies" and "storage"
-    supabaseResponse.headers.set('Clear-Site-Data', '"cache"');
-
     return supabaseResponse
 }

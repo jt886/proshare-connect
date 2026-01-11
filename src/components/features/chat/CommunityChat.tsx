@@ -58,14 +58,36 @@ export function CommunityChat() {
                     const newMessage = payload.new;
                     if (!newMessage) return;
 
-                    // Fetch the profile for the new message to get the nickname
+                    // Fetch the profile for the new message
                     const { data: profile } = await supabase
                         .from("profiles")
                         .select("nickname, avatar_url")
                         .eq("id", newMessage.user_id)
                         .single();
 
-                    setMessages((prev) => [...prev, { ...newMessage, profiles: profile }]);
+                    setMessages((prev) => {
+                        // DEDUPLICATION LOGIC:
+                        // Check if we have a pending optimistic message from this user with the same content
+                        // We assume the optimistic message is the one with a non-UUID id (e.g. timestamp)
+                        const optimisticMatchIndex = prev.findIndex(msg =>
+                            msg.user_id === newMessage.user_id &&
+                            msg.content === newMessage.content &&
+                            msg.id.length < 20 // timestamp IDs are shorter than UUIDs
+                        );
+
+                        if (optimisticMatchIndex !== -1) {
+                            // Replace optimistic message with real one
+                            const newMessages = [...prev];
+                            newMessages[optimisticMatchIndex] = { ...newMessage, profiles: profile };
+                            return newMessages;
+                        }
+
+                        // Otherwise append as normal
+                        // Also check for real duplicate (UUID match) just in case
+                        if (prev.some(msg => msg.id === newMessage.id)) return prev;
+
+                        return [...prev, { ...newMessage, profiles: profile }];
+                    });
                 }
             )
             .subscribe();
@@ -73,7 +95,7 @@ export function CommunityChat() {
         return () => {
             supabase.removeChannel(channel);
         };
-    }, []);
+    }, [currentUserId]); // Add currentUserId to dependency array for correct matching
 
     useEffect(() => {
         scrollRef.current?.scrollIntoView({ behavior: "smooth" });

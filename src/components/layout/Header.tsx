@@ -12,7 +12,7 @@ export function Header() {
                     </Link>
                 </div>
                 <div className="flex items-center gap-4">
-                    {/* <NotificationBell /> */}
+                    <NotificationBell />
                     <button className="text-muted-foreground hover:text-foreground">
                         <Menu className="h-5 w-5" />
                     </button>
