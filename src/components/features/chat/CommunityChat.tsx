@@ -25,9 +25,36 @@ export function CommunityChat() {
     const [input, setInput] = useState("");
     const [isLoading, setIsLoading] = useState(false);
     const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+    const [isInitialized, setIsInitialized] = useState(false);
     const scrollRef = useRef<HTMLDivElement>(null);
     const messageContainerRef = useRef<HTMLDivElement>(null);
     const supabase = createClient();
+
+    // 1. Load Cache on Mount
+    useEffect(() => {
+        const savedMessages = localStorage.getItem("community_chat_cache_v1");
+        const savedDraft = localStorage.getItem("community_chat_draft_v1");
+
+        if (savedMessages) {
+            try {
+                setMessages(JSON.parse(savedMessages));
+            } catch (e) { console.error("Cache parse error", e); }
+        }
+        if (savedDraft) {
+            setInput(savedDraft);
+        }
+        setIsInitialized(true);
+    }, []);
+
+    // 2. Save Cache on Update (only after init)
+    useEffect(() => {
+        if (isInitialized) {
+            if (messages.length > 0) {
+                localStorage.setItem("community_chat_cache_v1", JSON.stringify(messages));
+            }
+            localStorage.setItem("community_chat_draft_v1", input);
+        }
+    }, [messages, input, isInitialized]);
 
     useEffect(() => {
         const getUser = async () => {
