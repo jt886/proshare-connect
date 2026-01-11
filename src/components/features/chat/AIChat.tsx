@@ -24,6 +24,7 @@ export function AIChat() {
     ]);
     const [input, setInput] = useState("");
     const [isLoading, setIsLoading] = useState(false);
+    const [isInitialized, setIsInitialized] = useState(false);
     const scrollRef = useRef<HTMLDivElement>(null);
     const messageContainerRef = useRef<HTMLDivElement>(null);
 
@@ -37,14 +38,15 @@ export function AIChat() {
                 console.error("Failed to parse chat history", e);
             }
         }
+        setIsInitialized(true);
     }, []);
 
-    // Save to localStorage whenever messages change
+    // Save to localStorage whenever messages change, BUT ONLY after initialization
     useEffect(() => {
-        if (messages.length > 0) {
+        if (isInitialized) {
             localStorage.setItem("ai_chat_history_v1", JSON.stringify(messages));
         }
-    }, [messages]);
+    }, [messages, isInitialized]);
 
     // Scroll to bottom helper
     const scrollToBottom = (smooth = true) => {
