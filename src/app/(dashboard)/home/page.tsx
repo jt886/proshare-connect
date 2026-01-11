@@ -5,6 +5,7 @@ import { TeamSection } from "@/components/features/home/TeamSection";
 import { Button } from "@/components/ui/button";
 import { Plus, Settings } from "lucide-react";
 import Link from "next/link";
+import { toast } from "sonner";
 
 export default function HomePage() {
     return (
@@ -13,9 +14,10 @@ export default function HomePage() {
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-3xl font-extrabold tracking-tight">Today</h1>
-                    <p className="text-sm text-muted-foreground font-medium">January 10, 2026</p>
+                    <p className="text-sm text-muted-foreground font-medium">January 10, 2026 (v1.5.2 Check)</p>
                 </div>
                 <div className="flex gap-2">
+
                     <Link href="/settings">
                         <Button variant="secondary" size="icon" className="rounded-2xl h-10 w-10">
                             <Settings className="h-5 w-5" />

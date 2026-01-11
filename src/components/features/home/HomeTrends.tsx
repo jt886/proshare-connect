@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { TrendingUp, ArrowRight, Zap, Shield, Globe, ExternalLink } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -39,6 +40,7 @@ const newsData = [
         bg: "bg-blue-500/10",
         items: [
             { title: "Quantum computing breakthrough in silicon error correction", trend: "+12%", hot: false, url: "https://www.nature.com/articles/s41586-024-00001-x", isExternal: true },
+            { title: "SpaceX Starship orbital test confirmed for next week", trend: "New", hot: true, url: "https://www.spacex.com/updates", isExternal: true },
             { title: "New solid-state battery production starts in Japan", trend: "+67%", hot: true, url: "https://www.reuters.com/business/autos-transportation/", isExternal: true }
         ]
     },
@@ -55,6 +57,30 @@ const newsData = [
 
 export function HomeTrends() {
     const [selectedTrend, setSelectedTrend] = useState<any>(null);
+
+    // Step 2: News Notification Logic
+    // In a real app, this would check a timestamp from the DB.
+    // Here, we check if the mock data signature has changed.
+    useEffect(() => {
+        const checkNews = () => {
+            const currentSignature = JSON.stringify(newsData.map(c => c.items.map(i => i.title)));
+            const lastSeen = localStorage.getItem("last_seen_news_sig_v1");
+
+            if (lastSeen !== currentSignature) {
+                // New news detected!
+                // Wait a moment purely for effect
+                setTimeout(() => {
+                    toast.info("Update: New Market Trends available!", {
+                        description: "Check the latest AI & Tech news.",
+                        duration: 5000,
+                    });
+                    localStorage.setItem("last_seen_news_sig_v1", currentSignature);
+                }, 1500);
+            }
+        };
+
+        checkNews();
+    }, []);
 
     return (
         <div className="space-y-6">
