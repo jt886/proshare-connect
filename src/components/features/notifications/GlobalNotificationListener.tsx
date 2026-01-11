@@ -4,9 +4,18 @@ import { useEffect, useRef } from "react";
 import { createClient } from "@/utils/supabase/client";
 import { toast } from "sonner";
 
+import { usePathname } from "next/navigation";
+
 export function GlobalNotificationListener() {
     // Prevent double subscription in strict mode
     const isSubscribed = useRef(false);
+    const pathname = usePathname();
+    const pathnameRef = useRef(pathname);
+
+    // Keep ref updated with latest pathname
+    useEffect(() => {
+        pathnameRef.current = pathname;
+    }, [pathname]);
 
     useEffect(() => {
         if (isSubscribed.current) return;
@@ -34,6 +43,9 @@ export function GlobalNotificationListener() {
                             const newMessage = payload.new;
                             // Ignore if no message or if it's our own
                             if (!newMessage || newMessage.user_id === currentUserId) return;
+
+                            // Suppress notification if user is on the chat page
+                            if (pathnameRef.current === "/chat") return;
 
                             // Fetch nickname for friendly notification
                             const { data: senderProfile } = await supabase
