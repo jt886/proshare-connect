@@ -5,6 +5,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { BottomNav } from "@/components/layout/BottomNav";
 import { Header } from "@/components/layout/Header";
 import { Toaster } from "@/components/ui/sonner";
+import { GlobalNotificationListener } from "@/components/features/notifications/GlobalNotificationListener";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -64,6 +65,7 @@ export default function RootLayout({
               {children}
             </main>
             <BottomNav />
+            <GlobalNotificationListener />
             <Toaster position="top-center" richColors />
           </div>
         </ThemeProvider>
