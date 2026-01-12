@@ -1,7 +1,8 @@
 'use server';
 
 import webpush from 'web-push';
-import { createClient } from '@/utils/supabase/server';
+import { createClient } from '@/utils/supabase/server'; // User context client (cookies)
+import { createClient as createAdminClient } from '@supabase/supabase-js'; // Admin client (service role)
 
 // --- Push Subscription Management (Preserved) ---
 
@@ -40,22 +41,18 @@ export async function unsubscribeUser() {
     return { success: true };
 }
 
-// --- Notification Sending (Debug Version) ---
+// --- Notification Sending (Admin / Broadcast) ---
 
 export async function sendBroadcastNotification(message: string, senderId: string, senderNickname: string) {
-    console.log('--- 通知処理開始 ---');
-    const supabase = createClient(); // Note: createClient() for server actions usually needs 'await' in strict implementations but client provided synchronous usage in snippet. In 'utils/supabase/server', it is async? 
-    // Checking `src/utils/supabase/server.ts` imports... Usually it is async `await createClient()`. 
-    // However, I will check the file content first in next step or assume async. 
-    // Code snippet provided by user: `const supabase = createClient();` (no await).
-    // I will check if I should use await. PROBABLY YES.
-    // Wait, I will use `await createClient()` to be safe, or check imports.
-    // Actually, standard Next.js supabase server client instructions use await cookies().
-    // Using `await createClient()` is safer.
+    console.log('--- 通知処理開始 (Admin Mode) ---');
 
-    const sb = await createClient(); // Using variable sb to avoid confusion or modification of user snippet excess
+    // Use Service Role Client to bypass RLS and fetch ALL subscriptions
+    const supabaseAdmin = createAdminClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
 
-    const { data: subscriptions, error: dbError } = await sb
+    const { data: subscriptions, error: dbError } = await supabaseAdmin
         .from('push_subscriptions')
         .select('*')
         .neq('user_id', senderId);
@@ -67,7 +64,10 @@ export async function sendBroadcastNotification(message: string, senderId: strin
 
     console.log(`送信対象者数: ${subscriptions?.length || 0}名`);
 
-    if (!subscriptions || subscriptions.length === 0) return;
+    if (!subscriptions || subscriptions.length === 0) {
+        console.log('送信対象が存在しなかったため終了します。');
+        return;
+    }
 
     // 環境変数のチェックログ
     if (!process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || !process.env.VAPID_PRIVATE_KEY) {
@@ -90,7 +90,6 @@ export async function sendBroadcastNotification(message: string, senderId: strin
 
     await Promise.all(subscriptions.map(async (sub) => {
         try {
-            // FIX logic: DB uses p256dh_key, auth_key. User snippet used p256dh, auth.
             await webpush.sendNotification({
                 endpoint: sub.endpoint,
                 keys: { p256dh: sub.p256dh_key, auth: sub.auth_key },
@@ -99,7 +98,7 @@ export async function sendBroadcastNotification(message: string, senderId: strin
         } catch (error: any) {
             console.error(`送信失敗 (${sub.user_id}):`, error.statusCode, error.message);
             if (error.statusCode === 410 || error.statusCode === 404) {
-                await sb.from('push_subscriptions').delete().eq('id', sub.id);
+                await supabaseAdmin.from('push_subscriptions').delete().eq('id', sub.id);
                 console.log('無効な購読情報を削除しました');
             }
         }
@@ -110,7 +109,7 @@ export async function sendBroadcastNotification(message: string, senderId: strin
 // --- In-App Notification Helpers (Preserved) ---
 
 export async function getNotifications() {
-    const supabase = await createClient();
+    const supabase = await createClient(); // Use cookie client for user data
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return [];
 
