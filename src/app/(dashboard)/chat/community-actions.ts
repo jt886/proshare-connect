@@ -28,9 +28,8 @@ export async function getCommunityMessages() {
 }
 
 export async function sendCommunityMessage(content: string) {
-    const supabase = await createClient();
-
     // 1. ユーザー認証
+    const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
         return { error: "Unauthorized" };
@@ -46,7 +45,7 @@ export async function sendCommunityMessage(content: string) {
 
     // 2. データベースに保存
     const { error } = await supabase
-        .from("community_messages") // Using correct table name
+        .from("community_messages")
         .insert({
             user_id: user.id,
             user_email: user.email,
@@ -64,27 +63,25 @@ export async function sendCommunityMessage(content: string) {
         return { error: error.message };
     }
 
-    // 3. 通知を送信（エラーが起きてもチャットは止めない）
-    // Fire-and-forget logic using immediately invoked async function
-    (async () => {
-        try {
-            const { data: profile } = await supabase
-                .from('profiles')
-                .select('nickname')
-                .eq('id', user.id)
-                .single();
+    // 3. 通知処理を呼び出す
+    try {
+        const { data: profile } = await supabase
+            .from('profiles')
+            .select('nickname')
+            .eq('id', user.id)
+            .single();
 
-            const senderName = profile?.nickname || 'Someone';
-            // Truncate long messages
-            const shortMessage = content.length > 50 ? content.substring(0, 50) + '...' : content;
+        const senderName = profile?.nickname || 'Someone';
+        const shortMessage = content.length > 50 ? content.substring(0, 50) + '...' : content;
 
-            // 自分以外の全ユーザーへ通知
-            await sendBroadcastNotification(shortMessage, user.id, senderName);
+        console.log('sendMessageから通知呼び出し');
+        // Fire-and-forget with catch
+        sendBroadcastNotification(shortMessage, user.id, senderName)
+            .catch(e => console.error('通知呼び出し失敗:', e));
 
-        } catch (err) {
-            console.error('Notification failed:', err);
-        }
-    })();
+    } catch (err) {
+        console.error('Profile fetch or notification setup failed:', err);
+    }
 
     // 4. 画面更新
     revalidatePath("/chat");
