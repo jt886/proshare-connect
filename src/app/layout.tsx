@@ -26,6 +26,7 @@ export const metadata: Metadata = {
     statusBarStyle: "default",
     title: "proshareconnect",
   },
+  manifest: "/manifest.json",
 };
 
 export default function RootLayout({
