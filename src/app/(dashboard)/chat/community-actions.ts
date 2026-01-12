@@ -29,9 +29,12 @@ export async function getCommunityMessages() {
 
 export async function sendCommunityMessage(content: string) {
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
 
-    if (!user) return { error: "Unauthorized" };
+    // 1. ユーザー認証
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+        return { error: "Unauthorized" };
+    }
 
     let embedding: number[] | null = null;
     try {
@@ -39,17 +42,16 @@ export async function sendCommunityMessage(content: string) {
         embedding = await generateEmbedding(content.trim());
     } catch (e) {
         console.error("Failed to generate embedding for chat:", e);
-        // Continue sending message even if embedding fails, but log it
     }
 
-    // 1. Save Message to DB
+    // 2. データベースに保存
     const { error } = await supabase
-        .from("community_messages")
+        .from("community_messages") // Using correct table name
         .insert({
             user_id: user.id,
             user_email: user.email,
             content: content.trim(),
-            embedding: embedding // Save the vector
+            embedding: embedding
         });
 
     if (error) {
@@ -62,10 +64,10 @@ export async function sendCommunityMessage(content: string) {
         return { error: error.message };
     }
 
-    // 2. Broadcast Notification (Async / Non-blocking)
+    // 3. 通知を送信（エラーが起きてもチャットは止めない）
+    // Fire-and-forget logic using immediately invoked async function
     (async () => {
         try {
-            // Fetch nickname for the notification title
             const { data: profile } = await supabase
                 .from('profiles')
                 .select('nickname')
@@ -73,20 +75,18 @@ export async function sendCommunityMessage(content: string) {
                 .single();
 
             const senderName = profile?.nickname || 'Someone';
-            // Truncate long messages for notification body
+            // Truncate long messages
             const shortMessage = content.length > 50 ? content.substring(0, 50) + '...' : content;
 
-            await sendBroadcastNotification(
-                content,
-                shortMessage,
-                user.id,
-                senderName
-            );
+            // 自分以外の全ユーザーへ通知
+            await sendBroadcastNotification(shortMessage, user.id, senderName);
+
         } catch (err) {
-            console.error("Background notification error:", err);
+            console.error('Notification failed:', err);
         }
     })();
 
+    // 4. 画面更新
     revalidatePath("/chat");
     return { success: true };
 }

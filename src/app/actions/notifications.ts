@@ -3,6 +3,7 @@
 import webpush from 'web-push';
 import { createClient } from '@/utils/supabase/server';
 
+// Initial VAPID setup (can be overridden in functions if needed, but good to have global)
 webpush.setVapidDetails(
     process.env.VAPID_SUBJECT || 'mailto:support@proshare.connect',
     process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!,
@@ -43,12 +44,10 @@ export async function subscribeUser(sub: any) {
 }
 
 export async function unsubscribeUser() {
-    // In a real app, you might want to pass the endpoint to delete a specific one
-    // For now, we'll just return success as the logic handles mostly on client side clearing
     return { success: true };
 }
 
-// --- Notification Sending (Internal / Admin) ---
+// --- Notification Sending ---
 
 export async function sendPushNotification(userId: string, title: string, body: string, url: string = '/') {
     const supabase = await createClient();
@@ -99,7 +98,6 @@ export async function sendPushNotification(userId: string, title: string, body: 
             } catch (error: any) {
                 console.error('Error sending push:', error);
                 if (error.statusCode === 410 || error.statusCode === 404) {
-                    // Subscription/Endpoint is gone, delete it
                     await supabase.from('push_subscriptions').delete().eq('id', sub.id);
                 }
                 return { success: false, error };
@@ -110,61 +108,54 @@ export async function sendPushNotification(userId: string, title: string, body: 
     return { success: true, results };
 }
 
-/**
- * Broadcasts a push notification to all users EXCEPT the sender.
- * Note: Does not save to 'notifications' table to avoid spamming usage history.
- */
+// --- Broadcast Notification (Requested Implementation) ---
+
 export async function sendBroadcastNotification(message: string, senderId: string, senderNickname: string) {
     const supabase = await createClient();
 
-    // 1. Fetch all subscriptions EXCEPT the sender
+    // 自分以外の全ユーザーを取得
     const { data: subscriptions } = await supabase
         .from('push_subscriptions')
         .select('*')
         .neq('user_id', senderId);
 
-    if (!subscriptions || subscriptions.length === 0) {
-        return { success: true, message: 'No recipients found' };
-    }
+    if (!subscriptions || subscriptions.length === 0) return;
 
-    // 2. Prepare Payload
-    const payload = JSON.stringify({
-        title: `新着メッセージ: ${senderNickname}`,
-        body: message,
-        icon: '/icon-v2-192x192.png',
-        url: '/chat',
-    });
-
-    // 3. Send in parallel
-    const results = await Promise.all(
-        subscriptions.map(async (sub) => {
-            try {
-                await webpush.sendNotification(
-                    {
-                        endpoint: sub.endpoint,
-                        keys: {
-                            auth: sub.auth_key,
-                            p256dh: sub.p256dh_key,
-                        },
-                    },
-                    payload
-                );
-                return { success: true };
-            } catch (error: any) {
-                // Cleanup if invalid
-                if (error.statusCode === 410 || error.statusCode === 404) {
-                    await supabase.from('push_subscriptions').delete().eq('id', sub.id);
-                }
-                return { success: false, error };
-            }
-        })
+    // Ensure VAPID details are set
+    webpush.setVapidDetails(
+        `mailto:${process.env.VAPID_MAILTO || 'support@proshare.connect'}`,
+        process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!,
+        process.env.VAPID_PRIVATE_KEY!
     );
 
-    return { success: true, count: results.length };
+    const payload = JSON.stringify({
+        title: `新着: ${senderNickname}`,
+        body: message,
+        url: '/chat',
+        icon: '/icon-v2-192x192.png'
+    });
+
+    await Promise.all(subscriptions.map(async (sub) => {
+        try {
+            await webpush.sendNotification({
+                endpoint: sub.endpoint,
+                keys: {
+                    p256dh: sub.p256dh_key, // Note: DB column is p256dh_key, but web-push expects keys object. 
+                    // The provided snippet used sub.p256dh. I am using sub.p256dh_key based on known schema.
+                    // Wait, step 2655 shows DB has `p256dh_key` and `auth_key`.
+                    // User snippet used `p256dh` and `auth`. I MUST adapt to DB schema.
+                    auth: sub.auth_key
+                },
+            }, payload);
+        } catch (error: any) {
+            if (error.statusCode === 410 || error.statusCode === 404) {
+                await supabase.from('push_subscriptions').delete().eq('id', sub.id);
+            }
+        }
+    }));
 }
 
-
-// --- In-App Notification Management ---
+// --- In-App Notification Helpers ---
 
 export async function getNotifications() {
     const supabase = await createClient();
