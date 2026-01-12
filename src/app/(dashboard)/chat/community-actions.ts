@@ -1,56 +1,91 @@
-'use server'
+"use server";
 
-import { createClient } from '@/utils/supabase/server';
-import { revalidatePath } from 'next/cache';
-import { sendBroadcastNotification } from '@/app/actions/notifications';
-// もし generateEmbedding 等を使っている場合は、以下のようにコメントアウトを外すか、必要なimportを追加してください
-// import { generateEmbedding } from "@/utils/ai/vector-service"; 
+import { createClient } from "@/utils/supabase/server";
+import { revalidatePath } from "next/cache";
+import { generateEmbedding } from "@/utils/ai/vector-service";
+import { sendBroadcastNotification } from "@/app/actions/notifications";
 
-export async function sendMessage(formData: FormData) {
-    const supabase = createClient();
-
-    // 1. ユーザー認証
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-        throw new Error('Unauthorized');
-    }
-
-    // 2. メッセージ取得
-    const message = formData.get('message') as string;
-    if (!message) {
-        return { error: 'Message is empty' };
-    }
-
-    // 3. データベースに保存
-    const { error } = await supabase.from('messages').insert({
-        content: message,
-        user_id: user.id,
-    });
+export async function getCommunityMessages() {
+    const supabase = await createClient();
+    const { data, error } = await supabase
+        .from("community_messages")
+        .select(`
+            *,
+            profiles:user_id (nickname, avatar_url)
+        `)
+        .order("created_at", { ascending: true });
 
     if (error) {
-        console.error('Error saving message:', error);
+        console.error("Error fetching community messages:", {
+            code: error.code,
+            message: error.message,
+            details: error.details,
+            hint: error.hint
+        });
+        return { error: error.message };
+    }
+    return { data };
+}
+
+export async function sendCommunityMessage(content: string) {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) return { error: "Unauthorized" };
+
+    let embedding: number[] | null = null;
+    try {
+        // Auto-learning: Vectorize the message content
+        embedding = await generateEmbedding(content.trim());
+    } catch (e) {
+        console.error("Failed to generate embedding for chat:", e);
+        // Continue sending message even if embedding fails, but log it
+    }
+
+    // 1. Save Message to DB
+    const { error } = await supabase
+        .from("community_messages")
+        .insert({
+            user_id: user.id,
+            user_email: user.email,
+            content: content.trim(),
+            embedding: embedding // Save the vector
+        });
+
+    if (error) {
+        console.error("Error sending community message:", {
+            code: error.code,
+            message: error.message,
+            details: error.details,
+            hint: error.hint
+        });
         return { error: error.message };
     }
 
-    // 4. 全員へプッシュ通知を送る（新機能）
-    try {
-        // ニックネームを取得
-        const { data: profile } = await supabase
-            .from('profiles')
-            .select('nickname')
-            .eq('id', user.id)
-            .single();
+    // 2. Broadcast Notification (Async / Non-blocking)
+    (async () => {
+        try {
+            // Fetch nickname for the notification title
+            const { data: profile } = await supabase
+                .from('profiles')
+                .select('nickname')
+                .eq('id', user.id)
+                .single();
 
-        const nickname = profile?.nickname || '誰か';
+            const senderName = profile?.nickname || 'Someone';
+            // Truncate long messages for notification body
+            const shortMessage = content.length > 50 ? content.substring(0, 50) + '...' : content;
 
-        // 通知送信 (エラーでもチャット自体は止めない)
-        await sendBroadcastNotification(message, user.id, nickname);
+            await sendBroadcastNotification(
+                shortMessage,
+                user.id,
+                senderName
+            );
+        } catch (err) {
+            console.error("Background notification error:", err);
+        }
+    })();
 
-    } catch (err) {
-        console.error('Notification failed:', err);
-    }
-
-    // 5. 画面更新
-    revalidatePath('/chat');
+    revalidatePath("/chat");
     return { success: true };
 }
