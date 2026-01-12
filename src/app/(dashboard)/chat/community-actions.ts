@@ -25,7 +25,11 @@ export async function getCommunityMessages() {
     return { data };
 }
 
+return { data };
+}
+
 import { generateEmbedding } from "@/utils/ai/vector-service";
+import { sendBroadcastNotification } from "@/app/actions/notifications";
 
 export async function sendCommunityMessage(content: string) {
     const supabase = await createClient();
@@ -60,6 +64,31 @@ export async function sendCommunityMessage(content: string) {
         });
         return { error: error.message };
     }
+
+    // --- Fire Broadcast Notification (Async / Non-blocking) ---
+    // We don't await this because a 3-500ms delay for push sending shouldn't block the UI update
+    (async () => {
+        try {
+            // Fetch nickname for the notification title
+            const { data: profile } = await supabase
+                .from('profiles')
+                .select('nickname')
+                .eq('id', user.id)
+                .single();
+
+            const senderName = profile?.nickname || 'Someone';
+            const shortMessage = content.length > 50 ? content.substring(0, 50) + '...' : content;
+
+            await sendBroadcastNotification(
+                shortMessage,
+                user.id,
+                senderName
+            );
+        } catch (err) {
+            console.error("Background notification error:", err);
+        }
+    })();
+    // -----------------------------------------------------------
 
     revalidatePath("/chat");
     return { success: true };

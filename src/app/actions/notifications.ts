@@ -110,6 +110,58 @@ export async function sendPushNotification(userId: string, title: string, body: 
     return { success: true, results };
 }
 
+export async function sendBroadcastNotification(senderId: string, title: string, body: string, url: string = '/') {
+    const supabase = await createClient();
+
+    // 1. Fetch all subscriptions EXCEPT the sender
+    const { data: subscriptions } = await supabase
+        .from('push_subscriptions')
+        .select('*')
+        .neq('user_id', senderId);
+
+    if (!subscriptions || subscriptions.length === 0) {
+        return { success: true, message: 'No recipients found' };
+    }
+
+    const payload = JSON.stringify({
+        title,
+        body,
+        icon: '/icon-v2-192x192.png',
+        url,
+    });
+
+    // 2. Send in parallel
+    // Note: We are NOT saving to 'notifications' table to avoid spamming the persistent history with every chat message.
+    // This is strictly for "Push" alerts to bring users back to the app.
+
+    // Process in chunks if necessary, but Promise.all is fine for now
+    const results = await Promise.all(
+        subscriptions.map(async (sub) => {
+            try {
+                await webpush.sendNotification(
+                    {
+                        endpoint: sub.endpoint,
+                        keys: {
+                            auth: sub.auth_key,
+                            p256dh: sub.p256dh_key,
+                        },
+                    },
+                    payload
+                );
+                return { success: true };
+            } catch (error: any) {
+                // Cleanup if invalid
+                if (error.statusCode === 410 || error.statusCode === 404) {
+                    await supabase.from('push_subscriptions').delete().eq('id', sub.id);
+                }
+                return { success: false, error };
+            }
+        })
+    );
+
+    return { success: true, count: results.length };
+}
+
 // --- In-App Notification Management ---
 
 export async function getNotifications() {
@@ -148,4 +200,62 @@ export async function markAllAsRead() {
         .eq('user_id', user.id);
 
     return { success: true };
+}
+
+
+import webpush from 'web-push';
+import { createClient } from '@/utils/supabase/server'; // Supabaseクライアントのパスは環境に合わせてください
+
+// ... (既存のコード: saveSubscription など) ...
+
+// ★以下の関数を追加します
+export async function sendBroadcastNotification(message: string, senderId: string, senderNickname: string) {
+    const supabase = createClient();
+
+    // 1. 自分（送信者）以外の全ユーザーの購読情報を取得
+    const { data: subscriptions } = await supabase
+        .from('push_subscriptions')
+        .select('*')
+        .neq('user_id', senderId); // 送信者自身は除外
+
+    if (!subscriptions || subscriptions.length === 0) {
+        console.log('No subscriptions found.');
+        return;
+    }
+
+    // VAPIDキーの設定（念のため再設定）
+    webpush.setVapidDetails(
+        'mailto:your-email@example.com',
+        process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!,
+        process.env.VAPID_PRIVATE_KEY!
+    );
+
+    // 2. 全員に並列でプッシュ通知を送信
+    const notificationPayload = JSON.stringify({
+        title: `新着メッセージ: ${senderNickname}`,
+        body: message,
+        url: '/chat', // 通知をタップしたときの飛び先
+    });
+
+    const sendPromises = subscriptions.map(async (sub) => {
+        try {
+            const pushConfig = {
+                endpoint: sub.endpoint,
+                keys: {
+                    p256dh: sub.p256dh,
+                    auth: sub.auth,
+                },
+            };
+            await webpush.sendNotification(pushConfig, notificationPayload);
+        } catch (error) {
+            console.error('Error sending notification to user:', sub.user_id, error);
+            // エラー（購読解除など）が起きた場合、DBから削除する処理を入れても良い
+            if ((error as any).statusCode === 410 || (error as any).statusCode === 404) {
+                await supabase.from('push_subscriptions').delete().match({ id: sub.id });
+            }
+        }
+    });
+
+    await Promise.all(sendPromises);
+    console.log(`Sent notifications to ${subscriptions.length} users.`);
 }
