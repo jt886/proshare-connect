@@ -3,7 +3,11 @@ import { type NextRequest, NextResponse } from 'next/server';
 import webpush from 'web-push';
 import { createClient } from '@supabase/supabase-js';
 
-// ... (existing imports)
+webpush.setVapidDetails(
+    process.env.VAPID_SUBJECT || 'mailto:test@example.com',
+    process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!,
+    process.env.VAPID_PRIVATE_KEY!
+);
 
 export async function POST(req: NextRequest) {
     try {
