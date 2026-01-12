@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { createClient } from "@/utils/supabase/client";
 import { getCommunityMessages, sendCommunityMessage } from "@/app/(dashboard)/chat/community-actions";
+import { useChatUnread } from "@/hooks/useChatUnread"; // New Hook
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Send } from "lucide-react";
@@ -29,11 +30,15 @@ export function CommunityChat() {
     const scrollRef = useRef<HTMLDivElement>(null);
     const messageContainerRef = useRef<HTMLDivElement>(null);
     const supabase = createClient();
+    const { markAllAsRead } = useChatUnread(); // Hook
 
     // 1. Load Cache on Mount
     useEffect(() => {
         const savedMessages = localStorage.getItem("community_chat_cache_v1");
         const savedDraft = localStorage.getItem("community_chat_draft_v1");
+
+        // Mark as read when opening chat
+        markAllAsRead();
 
         if (savedMessages) {
             try {
@@ -44,7 +49,7 @@ export function CommunityChat() {
             setInput(savedDraft);
         }
         setIsInitialized(true);
-    }, []);
+    }, [markAllAsRead]);
 
     // 2. Save Cache on Update (only after init)
     useEffect(() => {

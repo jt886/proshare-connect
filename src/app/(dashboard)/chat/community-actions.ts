@@ -27,6 +27,24 @@ export async function getCommunityMessages() {
     return { data };
 }
 
+export async function getUnreadMessageCount(lastReadTime: string) {
+    const supabase = await createClient();
+
+    // Count messages created AFTER the last read time
+    // We use .gt() (greater than)
+    const { count, error } = await supabase
+        .from("community_messages")
+        .select('*', { count: 'exact', head: true })
+        .gt('created_at', lastReadTime);
+
+    if (error) {
+        console.error("Error fetching unread count:", error);
+        return { count: 0 };
+    }
+
+    return { count: count || 0 };
+}
+
 export async function sendCommunityMessage(content: string) {
     // 1. ユーザー認証
     const supabase = await createClient();
