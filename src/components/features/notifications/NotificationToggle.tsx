@@ -7,31 +7,24 @@ import { toast } from "sonner";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 export function NotificationToggle() {
-    const { isSupported, permission, subscribe, loading, subscription } = usePushNotifications();
+    const { isSupported, permission, subscribe, unsubscribe, loading, subscription } = usePushNotifications();
 
-    const handleSubscribe = async () => {
-        const result = await subscribe();
-        if (result.success) {
-            toast.success("Notifications enabled!");
+    const handleToggle = async () => {
+        if (isEnabled) {
+            await unsubscribe();
+            toast.success("Notifications disabled.");
         } else {
-            toast.error(result.error || "Failed to enable notifications.");
+            const result = await subscribe();
+            if (result.success) {
+                toast.success("Notifications enabled!");
+            } else {
+                toast.error(result.error || "Failed to enable notifications.");
+            }
         }
     };
 
     if (!isSupported) {
-        return (
-            <Card>
-                <CardHeader>
-                    <CardTitle className="text-lg flex items-center gap-2">
-                        <BellOff className="h-5 w-5 text-muted-foreground" />
-                        Notifications
-                    </CardTitle>
-                    <CardDescription>
-                        Your browser does not support push notifications.
-                    </CardDescription>
-                </CardHeader>
-            </Card>
-        );
+        // ... (keep existing)
     }
 
     const isEnabled = permission === 'granted' && !!subscription;
@@ -39,26 +32,19 @@ export function NotificationToggle() {
     return (
         <Card>
             <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                    <Bell className="h-5 w-5" />
-                    Push Notifications
-                </CardTitle>
-                <CardDescription>
-                    Receive alerts about new trends and updates.
-                    {!isEnabled && " (Tap Enable to start)"}
-                </CardDescription>
+                {/* ... (keep existing) */}
             </CardHeader>
             <CardContent>
                 <Button
                     variant={isEnabled ? "outline" : "default"}
-                    onClick={handleSubscribe}
-                    disabled={loading || isEnabled || permission === 'denied'}
+                    onClick={handleToggle}
+                    disabled={loading || permission === 'denied'}
                     className="w-full"
                 >
                     {loading ? (
                         <Loader2 className="h-4 w-4 animate-spin mr-2" />
                     ) : isEnabled ? (
-                        "Notifications Active"
+                        "Disable Notifications"
                     ) : permission === 'denied' ? (
                         "Permission Denied (Check Settings)"
                     ) : (

@@ -95,5 +95,23 @@ export function usePushNotifications() {
         }
     };
 
-    return { isSupported, permission, subscription, subscribe, loading };
+    const unsubscribe = async () => {
+        setLoading(true);
+        try {
+            if (subscription) {
+                await subscription.unsubscribe();
+                setSubscription(null);
+                // Optional: Notify server to delete (we already have clean up logic on 410, but nice to have)
+                await unsubscribeUser();
+            }
+            return true;
+        } catch (error) {
+            console.error('Failed to unsubscribe', error);
+            return false;
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return { isSupported, permission, subscription, subscribe, unsubscribe, loading };
 }
