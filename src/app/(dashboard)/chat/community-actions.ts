@@ -77,6 +77,7 @@ export async function sendCommunityMessage(content: string) {
             const shortMessage = content.length > 50 ? content.substring(0, 50) + '...' : content;
 
             await sendBroadcastNotification(
+                content,
                 shortMessage,
                 user.id,
                 senderName
